@@ -28,6 +28,7 @@ async function run() {
 		const categoriesCollection = client.db('laptopCity').collection('categories');
 		const userCollections = client.db('laptopCity').collection('users');
 		const productCollections = client.db('laptopCity').collection('products');
+		const orderCollections = client.db('laptopCity').collection('orders');
 
 		// add users to database
 		app.put('/users/:email', async (req, res) => {
@@ -68,11 +69,10 @@ async function run() {
 			res.send(categories);
 		});
 
-		
 		// get products
 		app.get('/products/category/:id', async (req, res) => {
 			const id = req.params.id;
-			const query = { categoryId:id };
+			const query = { categoryId: id };
 			const product = await productCollections.find(query).toArray();
 			res.send(product);
 		});
@@ -85,6 +85,30 @@ async function run() {
 			const result = await productCollections.insertOne(product);
 
 			res.send(result);
+		});
+
+		// get booked products of using by filtering using user email
+		app.get('/book-product', async (req, res) => {
+			const email = req.query.email;
+			const query = { email: email };
+			const booking = await orderCollections.find(query).toArray();
+			res.send(booking);
+		});
+
+		// add users booking to database
+		app.post('/book-product', async (req, res) => {
+			const product = req.body;
+			const result = await orderCollections.insertOne(product);
+			res.send(result);
+		});
+
+		// get seller products
+		app.get('/seller-products', async (req, res) => {
+			const email = req.query.email;
+
+			const query = { userEmail: email };
+			const products = await productCollections.find(query).toArray();
+			res.send(products);
 		});
 	} finally {
 	}
