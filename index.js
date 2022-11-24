@@ -27,9 +27,9 @@ async function run() {
 	try {
 		const categoriesCollection = client.db('laptopCity').collection('categories');
 		const userCollections = client.db('laptopCity').collection('users');
+		const productCollections = client.db('laptopCity').collection('products');
 
 		// add users to database
-
 		app.put('/users/:email', async (req, res) => {
 			const email = req.params.email;
 			const user = req.body;
@@ -46,7 +46,6 @@ async function run() {
 		});
 
 		// check if user is seller or not
-
 		app.get('/user/seller/:email', async (req, res) => {
 			const email = req.params.email;
 			const query = { email: email };
@@ -54,11 +53,38 @@ async function run() {
 			res.send({ isSeller: user?.role === 'Seller' });
 		});
 
+		// check if user is admin or not
+		app.get('/user/admin/:email', async (req, res) => {
+			const email = req.params.email;
+			const query = { email: email };
+			const user = await userCollections.findOne(query);
+			res.send({ isAdmin: user?.role === 'admin' });
+		});
+
 		// get categories
 		app.get('/categories', async (req, res) => {
 			const query = {};
 			const categories = await categoriesCollection.find(query).toArray();
 			res.send(categories);
+		});
+
+		
+		// get products
+		app.get('/products/category/:id', async (req, res) => {
+			const id = req.params.id;
+			const query = { categoryId:id };
+			const product = await productCollections.find(query).toArray();
+			res.send(product);
+		});
+
+		// api for adding products
+
+		app.post('/products', async (req, res) => {
+			const product = req.body;
+
+			const result = await productCollections.insertOne(product);
+
+			res.send(result);
 		});
 	} finally {
 	}
