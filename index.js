@@ -6,6 +6,7 @@ const port = process.env.PORT || 5000;
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require('stripe')(process.env.STRIPE_SK);
 
 // middleware
 app.use(express.json());
@@ -29,6 +30,13 @@ async function run() {
 		const userCollections = client.db('laptopCity').collection('users');
 		const productCollections = client.db('laptopCity').collection('products');
 		const orderCollections = client.db('laptopCity').collection('orders');
+		const paymentCollection = client.db('laptopCity').collection('payment');
+
+		// const verify if user is seller or not
+
+		// function verifySeller(req, res, next) {
+
+		// }
 
 		// add users to database
 		app.put('/users/:email', async (req, res) => {
@@ -95,6 +103,15 @@ async function run() {
 			res.send(booking);
 		});
 
+		// get single booked product so that user can pay for it
+
+		app.get('/book-product/:id', async (req, res) => {
+			const id = req.params.id;
+			const query = { _id: ObjectId(id) };
+			const booked = await orderCollections.findOne(query);
+			res.send(booked);
+		});
+
 		// add users booking to database
 		app.post('/book-product', async (req, res) => {
 			const product = req.body;
@@ -106,9 +123,56 @@ async function run() {
 		app.get('/seller-products', async (req, res) => {
 			const email = req.query.email;
 
+			const userQuery = { email: email };
+			const user = await userCollections.findOne(userQuery);
+			if (user?.role !== 'Seller') {
+				return res.status(403).send({ message: 'Forbidden Access' });
+			}
+
 			const query = { userEmail: email };
 			const products = await productCollections.find(query).toArray();
 			res.send(products);
+		});
+
+		// for payment
+
+		app.post('/create-payment-intent', async (req, res) => {
+			const order = req.body;
+			const price = order.price;
+			const amount = price;
+
+			// Create a PaymentIntent with the order amount and currency
+			const paymentIntent = await stripe.paymentIntents.create({
+				amount: amount,
+				currency: 'usd',
+				automatic_payment_methods: {
+					enabled: true,
+				},
+			});
+
+			res.send({
+				clientSecret: paymentIntent.client_secret,
+			});
+		});
+
+		// store payment info to database
+
+		app.post('/payments', async (req, res) => {
+			const payment = req.body;
+			const result = await paymentCollection.insertOne(payment);
+			console.log(payment);
+			const id = payment.productId;
+			const filter = { _id: ObjectId(id) };
+			const updatedDoc = {
+				$set: {
+					paid: true,
+				},
+			};
+
+			const updatedResult = await productCollections.updateOne(filter, updatedDoc);
+			
+
+			res.send(result);
 		});
 	} finally {
 	}
