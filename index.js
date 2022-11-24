@@ -22,7 +22,21 @@ const client = new MongoClient(uri, {
 	serverApi: ServerApiVersion.v1,
 });
 
-console.log();
+function verifyJWT(req, res, next) {
+	const authHeader = req.headers.authorization;
+	if (!authHeader) {
+		res.send(401).send({ message: 'Invalid authorization ' });
+	}
+
+	const token = authHeader.split(' ')[1];
+	jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+		if (err) {
+			res.send(403).send({ message: 'Forbidden Access ' });
+		}
+		req.decoded = decoded;
+		next();
+	});
+}
 
 async function run() {
 	try {
@@ -55,7 +69,7 @@ async function run() {
 		});
 
 		// check if user is seller or not
-		app.get('/user/seller/:email', async (req, res) => {
+		app.get('/user/seller/:email', verifyJWT, async (req, res) => {
 			const email = req.params.email;
 			const query = { email: email };
 			const user = await userCollections.findOne(query);
@@ -63,7 +77,7 @@ async function run() {
 		});
 
 		// check if user is admin or not
-		app.get('/user/admin/:email', async (req, res) => {
+		app.get('/user/admin/:email', verifyJWT, async (req, res) => {
 			const email = req.params.email;
 			const query = { email: email };
 			const user = await userCollections.findOne(query);
@@ -71,7 +85,7 @@ async function run() {
 		});
 
 		// get categories
-		app.get('/categories', async (req, res) => {
+		app.get('/categories', verifyJWT, async (req, res) => {
 			const query = {};
 			const categories = await categoriesCollection.find(query).toArray();
 			res.send(categories);
@@ -86,8 +100,7 @@ async function run() {
 		});
 
 		// api for adding products
-
-		app.post('/products', async (req, res) => {
+		app.post('/products', verifyJWT, async (req, res) => {
 			const product = req.body;
 
 			const result = await productCollections.insertOne(product);
@@ -96,7 +109,7 @@ async function run() {
 		});
 
 		// get booked products of using by filtering using user email
-		app.get('/book-product', async (req, res) => {
+		app.get('/book-product',verifyJWT, async (req, res) => {
 			const email = req.query.email;
 			const query = { email: email };
 			const booking = await orderCollections.find(query).toArray();
@@ -104,7 +117,6 @@ async function run() {
 		});
 
 		// get single booked product so that user can pay for it
-
 		app.get('/book-product/:id', async (req, res) => {
 			const id = req.params.id;
 			const query = { _id: ObjectId(id) };
@@ -113,14 +125,14 @@ async function run() {
 		});
 
 		// add users booking to database
-		app.post('/book-product', async (req, res) => {
+		app.post('/book-product',verifyJWT, async (req, res) => {
 			const product = req.body;
 			const result = await orderCollections.insertOne(product);
 			res.send(result);
 		});
 
 		// get seller products
-		app.get('/seller-products', async (req, res) => {
+		app.get('/seller-products', verifyJWT, async (req, res) => {
 			const email = req.query.email;
 
 			const userQuery = { email: email };
@@ -134,8 +146,17 @@ async function run() {
 			res.send(products);
 		});
 
-		// for payment
+		// delete seller product which is already sold out
 
+		app.delete('/seller-products/:id', verifyJWT, async (req, res) => {
+			const id = req.params.id;
+			const query = { _id: ObjectId(id) };
+
+			const result = await productCollections.deleteOne(query);
+			res.send(result);
+		});
+
+		// for payment
 		app.post('/create-payment-intent', async (req, res) => {
 			const order = req.body;
 			const price = order.price;
@@ -156,7 +177,6 @@ async function run() {
 		});
 
 		// store payment info to database
-
 		app.post('/payments', async (req, res) => {
 			const payment = req.body;
 			const result = await paymentCollection.insertOne(payment);
@@ -170,9 +190,42 @@ async function run() {
 			};
 
 			const updatedResult = await productCollections.updateOne(filter, updatedDoc);
-			
+
+			const query = { productId: id };
+			const updatedResult2 = await orderCollections.updateOne(query, updatedDoc);
 
 			res.send(result);
+		});
+
+		// get all seller users
+		app.get('/all-sellers', verifyJWT, async (req, res) => {
+			const query = { role: 'Seller' };
+			const user = await userCollections.find(query).toArray();
+			res.send(user);
+		});
+
+		// advertise product
+
+		// the reson of using display-home-product is If your URL contains words such as "advert", "ad", "doubleclick", "click", or something similar Then ad-blocker will block it.
+		app.put('/display-home-product/:id', verifyJWT, async (req, res) => {
+			const id = req.params.id;
+			const filter = { _id: ObjectId(id) };
+			console.log(filter);
+			const options = { upsert: true };
+			const updatedDoc = {
+				$set: {
+					productStatus: true,
+				},
+			};
+			const result = await productCollections.updateOne(filter, updatedDoc, options);
+			res.send(result);
+		});
+
+		// get advertised Product
+		app.get('/display-home-product', verifyJWT, async (req, res) => {
+			const query = { productStatus: true };
+			const products = await productCollections.find(query).toArray();
+			res.send(products);
 		});
 	} finally {
 	}
