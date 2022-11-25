@@ -241,6 +241,21 @@ async function run() {
 			const result = await productCollections.updateOne(filter, updatedDoc);
 			res.send(result);
 		});
+
+		// get reported items
+		app.get('/reported-items', verifyJWT, async (req, res) => {
+			const query = { reported: true };
+			const reportedItems = await productCollections.find(query).toArray();
+			res.send(reportedItems);
+		});
+
+		// delete reportedItems
+		app.delete('/reported-items/:id', verifyJWT, async (req, res) => {
+			const id = req.params.id;
+			const filter = { _id: ObjectId(id) };
+			const result = await productCollections.deleteOne(filter);
+			res.send(result);
+		});
 	} finally {
 	}
 }
