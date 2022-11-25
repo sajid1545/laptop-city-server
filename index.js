@@ -109,7 +109,7 @@ async function run() {
 		});
 
 		// get booked products of using by filtering using user email
-		app.get('/book-product',verifyJWT, async (req, res) => {
+		app.get('/book-product', verifyJWT, async (req, res) => {
 			const email = req.query.email;
 			const query = { email: email };
 			const booking = await orderCollections.find(query).toArray();
@@ -125,7 +125,7 @@ async function run() {
 		});
 
 		// add users booking to database
-		app.post('/book-product',verifyJWT, async (req, res) => {
+		app.post('/book-product', verifyJWT, async (req, res) => {
 			const product = req.body;
 			const result = await orderCollections.insertOne(product);
 			res.send(result);
@@ -226,6 +226,20 @@ async function run() {
 			const query = { productStatus: true };
 			const products = await productCollections.find(query).toArray();
 			res.send(products);
+		});
+
+		// post reported-items
+		app.put('/reported-items/:id', async (req, res) => {
+			const id = req.params.id;
+			const filter = { _id: ObjectId(id) };
+			const updatedDoc = {
+				$set: {
+					reported: true,
+				},
+			};
+
+			const result = await productCollections.updateOne(filter, updatedDoc);
+			res.send(result);
 		});
 	} finally {
 	}
