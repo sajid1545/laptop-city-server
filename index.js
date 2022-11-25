@@ -46,10 +46,9 @@ async function run() {
 		const orderCollections = client.db('laptopCity').collection('orders');
 		const paymentCollection = client.db('laptopCity').collection('payment');
 
-		// get all users from product info
-
-		app.get('/user/products/:id', async (req, res) => {
-			// const email = req.query.email;
+		// to check if seller is verified or not
+		app.get('/user/products/:id', verifyJWT, async (req, res) => {
+			
 			const id = req.params.id;
 			const filter = { _id: ObjectId(id) };
 			const product = await productCollections.findOne(filter);
