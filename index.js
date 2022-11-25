@@ -91,7 +91,7 @@ async function run() {
 		});
 
 		// get categories
-		app.get('/categories', verifyJWT, async (req, res) => {
+		app.get('/categories',  async (req, res) => {
 			const query = {};
 			const categories = await categoriesCollection.find(query).toArray();
 			res.send(categories);
@@ -254,7 +254,7 @@ async function run() {
 		});
 
 		// get advertised Product
-		app.get('/display-home-product', verifyJWT, async (req, res) => {
+		app.get('/display-home-product',  async (req, res) => {
 			const query = { productStatus: true };
 			const products = await productCollections.find(query).toArray();
 			res.send(products);
