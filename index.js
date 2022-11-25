@@ -46,11 +46,19 @@ async function run() {
 		const orderCollections = client.db('laptopCity').collection('orders');
 		const paymentCollection = client.db('laptopCity').collection('payment');
 
-		// const verify if user is seller or not
+		// get all users from product info
 
-		// function verifySeller(req, res, next) {
+		app.get('/user/products/:id', async (req, res) => {
+			// const email = req.query.email;
+			const id = req.params.id;
+			const filter = { _id: ObjectId(id) };
+			const product = await productCollections.findOne(filter);
+			const userEmail = product.userEmail;
+			const query = { email: userEmail };
+			const user = await userCollections.findOne(query);
 
-		// }
+			res.send({ product, user });
+		});
 
 		// add users to database
 		app.put('/users/:email', async (req, res) => {
@@ -98,6 +106,8 @@ async function run() {
 			const product = await productCollections.find(query).toArray();
 			res.send(product);
 		});
+
+		// getProducts posted by which user
 
 		// api for adding products
 		app.post('/products', verifyJWT, async (req, res) => {
@@ -220,7 +230,7 @@ async function run() {
 		});
 
 		// delete buyer
-		app.delete('/all-buyers/:id', async (req, res) => {
+		app.delete('/all-buyers/:id', verifyJWT, async (req, res) => {
 			const id = req.params.id;
 			const filter = { _id: ObjectId(id) };
 			const result = await userCollections.deleteOne(filter);
