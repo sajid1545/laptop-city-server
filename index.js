@@ -212,6 +212,21 @@ async function run() {
 			res.send(result);
 		});
 
+		// get all buyers
+		app.get('/all-buyers', verifyJWT, async (req, res) => {
+			const query = { role: 'buyer' };
+			const buyer = await userCollections.find(query).toArray();
+			res.send(buyer);
+		});
+
+		// delete buyer
+		app.delete('/all-buyers/:id', async (req, res) => {
+			const id = req.params.id;
+			const filter = { _id: ObjectId(id) };
+			const result = await userCollections.deleteOne(filter);
+			res.send(result);
+		});
+
 		// advertise product
 
 		// the reson of using display-home-product is If your URL contains words such as "advert", "ad", "doubleclick", "click", or something similar Then ad-blocker will block it.
