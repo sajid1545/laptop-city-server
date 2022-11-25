@@ -256,6 +256,19 @@ async function run() {
 			const result = await productCollections.deleteOne(filter);
 			res.send(result);
 		});
+
+		// verifyUser
+		app.put('/verify-user/:id', verifyJWT, async (req, res) => {
+			const id = req.params.id;
+			const filter = { _id: ObjectId(id) };
+			const updatedDoc = {
+				$set: {
+					verified: true,
+				},
+			};
+			const result = await userCollections.updateOne(filter, updatedDoc);
+			res.send(result);
+		});
 	} finally {
 	}
 }
