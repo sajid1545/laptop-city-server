@@ -48,7 +48,6 @@ async function run() {
 
 		// to check if seller is verified or not
 		app.get('/user/products/:id', verifyJWT, async (req, res) => {
-			
 			const id = req.params.id;
 			const filter = { _id: ObjectId(id) };
 			const product = await productCollections.findOne(filter);
@@ -121,7 +120,8 @@ async function run() {
 		app.get('/book-product', verifyJWT, async (req, res) => {
 			const email = req.query.email;
 			const query = { email: email };
-			const booking = await orderCollections.find(query).toArray();
+			const cursor = orderCollections.find(query).sort({"_id": -1})
+			const booking = await cursor.toArray();
 			res.send(booking);
 		});
 
